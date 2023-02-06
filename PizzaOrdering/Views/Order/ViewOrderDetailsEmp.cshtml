@@ -1,0 +1,95 @@
+﻿@using System.Globalization
+
+@model Order
+@{
+    ViewBag.Title = "Order Details";
+    CultureInfo ci = new CultureInfo("en-us");
+
+    List<string> statusOptions = new List<string>() { "Preparing", "In the Oven", "In Transit", "Complete" };
+}
+
+<div class="text-left">
+    <h2>Order #@Model.ID Details</h2>
+</div>
+<br />
+
+<p><strong>Date & Time: </strong>@Model.OrderDate</p>
+<p><strong>Type: </strong>@Model.OrderType</p>
+@if(Model.OrderType == "Delivery")
+{
+    <p><strong>Delivery Address: </strong>@Model.DeliveryAddress</p>
+}
+
+@using (Html.BeginForm("UpdateStatus", "Order", FormMethod.Post))
+{
+    <div asp-validation-summary="All"></div>
+
+    @Html.Hidden("id", Model.ID);
+
+    <p>
+        <strong>Status: </strong>
+        <select id="newStatus" name="newStatus">
+            @for (int i = 0; i < statusOptions.Count; i++)
+            {
+                if (Model.Status == statusOptions[i])
+                {
+                    <option value="@statusOptions[i]" selected>@statusOptions[i]</option>
+                }
+                else
+                {
+                    <option value="@statusOptions[i]">@statusOptions[i]</option>
+                }
+            }
+        </select>
+    </p>
+
+    <button type="submit" class="btn btn-primary">Update Status</button> <br />
+}
+<br />
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr><th>Type</th><th>Toppings</th><th>Quantity</th><th>Price</th>
+    </thead>
+    <tbody>
+        @foreach (var pizza in Model.Pizzas)
+        {
+            <tr>
+                <td>@pizza.PizzaType</td>
+                <td>
+                    @foreach (var topping in pizza.Toppings)
+                    {
+                        <span>@topping.Name - @topping.Price.ToString("C", ci)</span> <br />
+                    }
+
+                </td>
+                <td>@pizza.Quantity</td>
+                <td>@pizza.Price.ToString("C", ci)</td>
+            </tr>
+
+        }
+        <tr>
+            <td></td>
+            <td></td>
+            <td>Subtotal:</td>
+            <td>@Model.Subtotal.ToString("C", ci)</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td>Tax:</td>
+            <td>@Model.Tax.ToString("C", ci)</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td></td>
+            <td><strong>Total:</strong></td>
+            <td><strong>@Model.OrderTotal.ToString("C", ci)</strong></td>
+        </tr>
+    </tbody>
+</table>
+
+
+<br />
+<br />
+<a asp-controller="Order" asp-action="ViewOrdersEmp">Back to Orders</a>
+<br />

@@ -1,0 +1,162 @@
+﻿@using Microsoft.AspNetCore.Http
+@using Newtonsoft.Json
+@using System.Globalization
+
+@model Order
+@{
+    ViewBag.Title = "Place Order";
+
+    List<string> orderTypeOptions = new List<string> { "Pickup", "Delivery" };
+
+    // Session states to keep track of current order
+    var session = new OrderSession(Context.Session);
+    var pizzas = session.GetPizzas();
+    string subtotalString = session.GetSubtotal();
+    var subtotal = System.Convert.ToDecimal(subtotalString);
+    string taxString = session.GetTax();
+    var tax = System.Convert.ToDecimal(taxString);
+    var total = subtotal + tax;
+    var ordertype = session.GetOrderType();
+    var deliveryaddress = session.GetDeliveryAddress();
+
+    CultureInfo ci = new CultureInfo("en-us"); // for USD $ currency format
+}
+
+<div class="text-left">
+    <h2>Place a Pizza Order</h2>
+</div>
+<br />
+
+@* form for user to enter type of order and delivery address if delivery*@
+@using (Html.BeginForm("SaveInfo", "Order", FormMethod.Post))
+{
+    <div asp-validation-summary="All"></div>
+
+    <div>
+        <label id="OrderType"><strong>Order Type</strong></label> <br />
+        @if (ordertype == null)
+        {
+            @Html.DropDownList("OrderType", new SelectList(orderTypeOptions), "Select");
+        }
+        else
+        {
+            <select id="OrderType" name="OrderType" required>
+                @for (int i = 0; i < orderTypeOptions.Count; i++)
+                {
+                    if (ordertype == orderTypeOptions[i])
+                    {
+                        <option value="@orderTypeOptions[i]" selected>@orderTypeOptions[i]</option>
+                    }
+                    else
+                    {
+                        <option value="@orderTypeOptions[i]">@orderTypeOptions[i]</option>
+                    }
+                }
+            </select>
+        }
+
+    </div>
+    <br />
+    <div>
+        <label id="DeliveryAddress"><strong>Delivery Address</strong></label> <br />
+        @if (deliveryaddress == null)
+        {
+            @Html.TextBox("DeliveryAddress")
+        }
+        else
+        {
+            <input id="DeliveryAddress" name="DeliveryAddress" value="@deliveryaddress" required />
+        }
+    </div>
+    <br />
+    <button type="submit" class="btn btn-primary">Save Info</button>
+    <br />
+}
+<br />
+
+@* table that only displays if the user has 1 or more pizzas in the current order *@
+@if (pizzas.Count > 0)
+{
+    <br />
+    <p><strong>Pizzas</strong></p>
+    <a asp-controller="Order" asp-action="ClearOrder">Start Over</a>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr><th>Type</th><th>Toppings</th><th>Quantity</th><th>Price</th>
+        </thead>
+        <tbody>
+            @foreach (var pizza in pizzas)
+            {
+                <tr>
+                    <td>@pizza.PizzaType</td>
+                    <td>
+                        @foreach (var topping in pizza.Toppings)
+                        {
+                            <span>@topping.Name - @topping.Price.ToString("C", ci)</span> <br />
+                        }
+                    </td>
+                    <td>@pizza.Quantity</td>
+                    <td>@pizza.Price.ToString("C", ci)</td>
+                </tr>
+            }
+            <tr>
+                <td></td>
+                <td></td>
+                <td>Subtotal:</td>
+                <td>@subtotal.ToString("C", ci)</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td>Tax:</td>
+                <td>@tax.ToString("C", ci)</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td><strong>Total:</strong></td>
+                <td><strong>@total.ToString("C", ci)</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    <br />
+
+    @using (Html.BeginForm("SubmitOrder", "Order", FormMethod.Post))
+    {
+        <button type="submit" class="btn btn-primary">Submit Order</button>
+    }
+}
+<br />
+
+@* form for adding pizzas to the order *@
+@using (Html.BeginForm("AddPizza", "Pizza", FormMethod.Post))
+{
+    <div asp-validation-summary="All"></div>
+
+    <div>
+        <label><strong>Pizza Type</strong></label> <br />
+        @Html.RadioButton("PizzaType", "Classic") <span> Classic</span><br />
+        @Html.RadioButton("PizzaType", "Thin Crust") <span> Thin Crust</span><br />
+        @Html.RadioButton("PizzaType", "Deep Dish") <span> Deep Dish</span><br />
+        @Html.RadioButton("PizzaType", "Cecilian") <span> Cecilian</span><br />
+    </div>
+    <br />
+    <div>
+        <label><strong>Toppings</strong></label> <br />
+        @Html.CheckBox("Pepperoni", false) @Html.Label("Pepperoni") <br />
+        @Html.CheckBox("Sausage", false) @Html.Label("Sausage") <br />
+        @Html.CheckBox("Bacon", false) @Html.Label("Bacon") <br />
+        @Html.CheckBox("Mushrooms", false) @Html.Label("Mushrooms") <br />
+        @Html.CheckBox("Onions", false) @Html.Label("Onions") <br />
+        @Html.CheckBox("ExtraCheese", false) @Html.Label("Extra Cheese") <br />
+    </div>
+    <br />
+
+    <div>
+        <label><strong>Quantity</strong></label> <br />
+        @Html.TextBox("Quantity")
+    </div>
+    <br />
+    <button type="submit" class="btn btn-primary">Add Pizza</button>
+
+}
